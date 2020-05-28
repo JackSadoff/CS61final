@@ -193,6 +193,60 @@ console.log("invalid credentials")
 });
 });
 
+
+// PUT -[TaskComplete] UPDATE data in database, make sure to get the ID of the row to update from URL route, return status code 200 if successful
+router.put("/api/Complete/Task/:user/:password/:id",function(req,res){
+    // console.log(req.query);
+    const table= 'Task';
+    const p_key= get_pkey(table);
+    const username=req.params.user;
+    const password=req.params.password;
+    global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username],function (error, results, fields) {
+        if (error) throw error;
+        if (results[0]==undefined){
+                res.send(JSON.stringify({"status": 401, "error": "invalid credentials"}));
+                return;
+                }
+                const hash = results[0].Password;const admin=results[0].IsAdmin;const empid=results[0].EmployeeID;
+            bcrypt.compare(password, hash, function(err, success) {
+                if (err) throw err;
+        if (success && (admin == 1 )){
+	// var quer=req.query
+	quer_str="";
+	quer_str=quer_str.concat("UPDATE ",table," SET IsComplete=1 WHERE ",p_key," = ?");
+	// // if (table == "Employee"){
+	// bcrypt.genSalt(saltRounds,function (err,salt){
+	// if (err) throw error;
+
+	// bcrypt.hash(req.query.Password, salt,null, function(err, hash) {
+	// if (err) throw error;
+	// console.log(hash);
+	// if (typeof quer.Password !== 'undefined'){
+	// quer.Password=hash;}
+	// console.log(quer);
+	// //read a single employee with RestauantID = req.params.id (the :id in the url above), return status code 200 if successful, 404 if not
+	// global.connection.query(quer_str, [req.params.id],function (error, results, fields) {
+	// 	if (error) throw error;
+	// 	res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
+	// });
+	// });
+    // });
+//     } else{
+            global.connection.query(quer_str, [req.params.id],function (error, results, fields) {
+                if (error) throw error;
+                res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
+            });
+	// }
+        } else {
+            res.send(JSON.stringify({"status": 401, "error": "invalid credentials"}));
+            console.log("invalid credentials")
+        }
+});
+});
+});
+
+
+
 // POST -- create new employee, return location of new restaurant in location header, return status code 200 if successful
 router.post("/api/:table/:user/:password",function(req,res){
 //	console.log(req.query);
