@@ -207,6 +207,53 @@ router.put("/api/:table/:user/:password/:id", function (req, res) {
 	});
 });
 
+
+// PUT -[TaskComplete] UPDATE data in database, make sure to get the ID of the row to update from URL route, return status code 200 if successful
+router.put("/api/Complete/Task/:user/:password/:id",function(req,res){
+    const table= 'Task';
+    const p_key= get_pkey(table);
+    const username=req.params.user;
+    const password=req.params.password;
+    var empid=0
+    global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username],function (error, results, fields) {
+        if (error) throw error;
+        if (results[0]==undefined){
+                res.send(JSON.stringify({"status": 401, "error": "invalid credentials"}));
+                return;
+                }
+                const hash = results[0].Password;const admin=results[0].IsAdmin;empid=results[0].EmployeeID;
+            bcrypt.compare(password, hash, function(err, success) {
+                if (err) throw err;
+        if (success && (admin == 1 )){
+            global.connection.query('UPDATE Task SET IsComplete=1 WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
+                if (error) throw error;
+                res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
+            });
+        } else { // Check if user is attempting to update their own task by checking the Task's ShiftID, the Shift's EmployeeID to see if it matches the user's
+            global.connection.query('SELECT ShiftID FROM Task WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
+                if (error) throw error;
+                console.log(results[0].ShiftID)
+                global.connection.query('SELECT EmployeeID FROM EmployeeShift WHERE ShiftID = ?', [results[0].ShiftID], function (error, results, fields) {
+                    if (error) throw error;
+                    empid_of_update = results[0].EmployeeID
+                    if (empid_of_update != empid){
+                        res.send(JSON.stringify({"status": 401, "error": "invalid credentials"})); 
+                        console.log("invalid credentials")
+                    } else { // If the user is not the admin, they can only mark their own task as complete
+                        global.connection.query('UPDATE Task SET IsComplete=1 WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
+                            if (error) throw error;
+                            res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
+                        });
+                    }
+                });
+            });
+        }
+});
+});
+});
+
+
+
 // POST -- create new employee, return location of new restaurant in location header, return status code 200 if successful
 router.post("/api/:table/:user/:password", function (req, res) {
 	//	console.log(req.query);
