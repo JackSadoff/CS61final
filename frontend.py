@@ -1,20 +1,22 @@
 import requests
 import os
 
+
 def user_login(url, data):
 
 	resp = requests.get(url, json=data)
 
 	if resp.json()['status'] == 401:
-		print('Something went wrong: {}'.format(resp.json()['response']))
+		print('Something went wrong: {}'.format(resp.json()['error']))
 		exit()
 	elif resp.json()['status'] == 402:
-		print('Something went wrong: {}'.format(resp.json()['response']))
+		print('Something went wrong: {}'.format(resp.json()['error']))
 		exit()
 	else:
 		print('Login Succeeded {}'.format(resp.status_code))
 
 	print(resp.json())
+
 
 def login():
 	# print("Enter Username: ")
@@ -29,7 +31,8 @@ def login():
 		"password": inputpass
 	}
 
-	user_login('http://localhost:3000/api/Employee/' + str(inputusername) + "/" + str(inputpass), auth)
+	user_login('http://localhost:3000/api/Employee/' +
+	           str(inputusername) + "/" + str(inputpass), auth)
 
 	return inputusername, inputpass
 
@@ -40,27 +43,28 @@ def updates(x, username, password, objID, options):
 	data = ""
 	mod = "not done"
 	new = "not done"
-	
+
 	while mod != "done" and new != "done":
 		mod = input("Field: ")
 		new = input("New Value: ")
-		
+
 		if mod != "done" and new != "done":
 			modify.append(mod)
 			change.append(new)
-	
+
 	flag = True
 	for each in modify:
 		if each not in options:
 			flag = False
-	
+
 	if flag:
 		data += "?"
 		for i in range(0, len(modify)):
 			data += str(modify[i]) + "=" + str(change[i]) + "&"
 		data = data[:-1]
-		
-		json_resp = make_put_call('http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password) + '/' + str(objID) + '/' + str(data), {})
+
+		json_resp = make_put_call('http://localhost:3000/api/' + str(x) + '/' + str(
+		    username) + '/' + str(password) + '/' + str(objID) + '/' + str(data), {})
 		print(json_resp)
 	else:
 		print()
@@ -75,46 +79,67 @@ def updates(x, username, password, objID, options):
 	os.system('clear')
 
 
+def set_Task(username, password, taskID, markTask):
+	json_resp = make_put_call('http://localhost:3000/api/Complete/Task' + '/' + str(username) + '/' \
+		+ str(password) + '/' + str(taskID) + '?isComplete=' + str(markTask), {})
+	print(json_resp)
+	
+	print()
+	print("--------------------")
+	print("Hit Enter When Done!")
+	print("--------------------")
+	y = input()
+
+	os.system('clear')
+
+def deletes(username, password):
+	pass
+
+
 def make_get_call(url):
-	#make get call to url
+	# make get call to url
 	resp = requests.get(url)
-	#expecting to get a status of 200 on success
+	# expecting to get a status of 200 on success
 	if resp.json()['status'] != 200:
 		# This means something went wrong.
 		print('Something went wrong {}'.format(resp.status_code))
 		exit()
-		
+
 	return resp.json()['response']
 
+
 def make_post_call(url, data):
-	#make post call to url passing it data
+	# make post call to url passing it data
 	resp = requests.post(url, json=data)
-	#expecting to get a status of 201 on success
+	# expecting to get a status of 201 on success
 	if resp.json()['status'] != 201:
 		print('Something went wrong {}'.format(resp.status_code))
 		exit()
 	print('post succeeded')
-	
-def make_put_call(url,data):
-	#make post call to url passing it data
+
+
+def make_put_call(url, data):
+	# make post call to url passing it data
 	resp = requests.put(url, json=data)
-	#expecting to get a status of 200 on success
+	# expecting to get a status of 200 on success
 	if resp.json()['status'] != 200:
-		print('Something went wrong {}'.format(resp.status_code))
+		print('Something went wrong: {}'.format(resp.json()['error']))
 		exit()
 	print('put succeeded')
 
 	return resp.json()['response']
-	
+
 
 def make_delete_call(url):
-	#make post call to url passing it data
+	# make post call to url passing it data
 	resp = requests.delete(url)
-	#expecting to get a status of 200 on success
+	# expecting to get a status of 200 on success
 	if resp.json()['status'] != 200:
-		print('Something went wrong {}'.format(resp.status_code))
+		print('Something went wrong {}'.format(resp.json()['error']))
 		exit()
 	print('delete succeeded')
+	return resp.json()['response']
+
 
 def use(username, password):
 	x = "not quit"
@@ -122,12 +147,12 @@ def use(username, password):
 	# admin_status = response['response'][0]['AdminRights']
 
 	admin_status = 1
-	
+
 	print(admin_status)
 	while (x != "quit"):
 		print("You are currently in the Main panel!")
 		print("----------------------------------------")
-		print("Options: ViewInfo, ModifyInfo")
+		print("Options: ViewInfo, ModifyInfo, AddInfo, DeleteInfo")
 		print("----------------------------------------")
 		x = input()
 		os.system('clear')
@@ -143,9 +168,10 @@ def use(username, password):
 				print("----------------------------------------")
 				x = input()
 				os.system('clear')
-				if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "PatientID" \
-					or x == "ShiftType" or x =="Task"or x == "TaskCode"or x == "Room" or x == "TaskLog" or x == "PatientLog"):
-					json_resp = make_get_call('http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password))
+				if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "PatientID"
+					or x == "ShiftType" or x == "Task" or x == "TaskCode" or x == "Room" or x == "TaskLog" or x == "PatientLog"):
+					json_resp = make_get_call(
+					    'http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password))
 					print(json_resp)
 				elif (x == 'back'):
 					os.system('clear')
@@ -169,29 +195,90 @@ def use(username, password):
 				print("Modification Options: Employee, EmployeeShift, EmployeeType, Task, TaskCode, Patient, Room")
 				print("To go back, simply enter 'back'")
 				print("----------------------------------------")
-				
+
 				x = input()
 				os.system('clear')
-				
-				
-				#if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "PatientID" \
-					#or x =="Task"or x == "TaskCode"or x == "Room"):
 
 				if (x == "Employee"):
 					objID = input("Which employee would you like to update (ID): ")
 					print("Employee Modification Options: EmployeeName, EmployeeTypeID, Salary, IsAdmin")
 					option_list = ['EmployeeName', 'EmployeeTypeID', 'Salary', 'IsAdmin']
 					updates(x, username, password, objID, option_list)
+				elif (x == "EmployeeShift"):
+					objID = input("Which shift would you like to update (ShiftID): ")
+					print("EmployeeShift Modification Options: EmployeeID, ShiftTypeID")
+					option_list = ['EmployeeID', 'ShiftTypeID']
+					updates(x, username, password, objID, option_list)
+				elif (x == "EmployeeType"):
+					objID = input("Which employee type would you like to update (TypeID): ") 
+					print("EmployeeType Modification Options: TypeName, TypeDescription")
+					option_list = ['TypeName', 'TypeDescription']
+					updates(x, username, password, objID, option_list)
+				elif (x == "Patient"):
+					objID = input("Which patient would you like to update (PatientID): ")
+					print("Patient Modification Options: RoomID, PatientName, PatientDescription")
+					option_list = ['RoomID', 'PatientName', 'PatientDescription']
+					updates(x, username, password, objID, option_list)
+				elif (x == "Task"):
+					taskID = input("Which task's completion status would you like to update (TaskID): ")
+					markTask = input("Type 0 if you would like to mark task as incomplete, Type 1 if you would like to mark task as complete: ")
+					while markTask != str(0) and markTask != str(1):
+						markTask = input("Please type 0 or 1 ONLY: ")
+					set_Task(username, password, taskID, markTask)
 
-				# elif (x == "EmployeeShift"):
-				# 	objID = input("Which shift would you like to update (ShiftID): ")
-				# 	print("Employee Modification Options: EmployeeID, ShiftTypeID")
-				# 	updates(x, username, password, objID)
+				elif (x == "TaskCode"):
+					objID = input("Which task code would you like to update (TaskCodeID): ")
+					print("TaskCode Modification Options: TaskName, TaskDescription, Equipment")
+					option_list = ['TaskName', 'TaskDescription', 'Equipment']
+					updates(x, username, password, objID, option_list)
+				elif (x == "Room"):
+					objID = input("Which room would you like to update (RoomID): ")
+					print("Room Modification Options: IsEmpty, Purpose")
+					option_list = ['IsEmpty', 'Purpose']
+					updates(x, username, password, objID, option_list)
+				else:
+					print("Invalid Query!")
+					
+			
+		elif(x == "AddInfo"): # NEED TO FINISH THIS
+			while(x != "back" and x != "quit"):
+				os.system('clear')
+				print("You are currently in the AddInfo panel!")
+				print("----------------------------------------")
+				print("Addition Options: Employee, EmployeeShift, EmployeeType, Task, TaskCode, Patient, Room")
+				print("To go back, simply enter 'back'")
+				print("----------------------------------------")
 
-				# elif (x == "EmployeeType"):
-				# 	objID = input("Which employee type would you like to update (TypeID): ")
-				# 	print("Employee Modification Options: TypeName, TypeDescription")
-				# 	updates(x, username, password, objID)
+				x = input()
+				os.system('clear')
+
+		elif (x == "DeleteInfo"):  # NEED TO HANDLE ERRORS SUCH AS INVALID IDS
+			while(x != "back" and x != "quit"):
+				os.system('clear')
+				print("You are currently in the DeleteInfo panel!")
+				print("----------------------------------------")
+				print("Deletion Options: Employee, EmployeeShift, EmployeeType, Task, TaskCode, Patient, Room")
+				print("To go back, simply enter 'back'")
+				print("----------------------------------------")
+
+				x = input()
+				os.system('clear')
+				if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "PatientID"
+					or x == "ShiftType" or x == "Task" or x == "TaskCode" or x == "Room"):
+					objID = input("Which " + str(x).lower() + " would you like to delete (" + str(x) + "ID): ")
+					json_resp = make_delete_call('http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + \
+						str(password) + '/' + str(objID))
+					print(json_resp)
+
+					print()
+					print("--------------------")
+					print("Hit Enter When Done!")
+					print("--------------------")
+					y = input()
+
+					os.system('clear')
+
+
 
 				
 							

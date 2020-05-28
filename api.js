@@ -225,10 +225,20 @@ router.put("/api/Complete/Task/:user/:password/:id",function(req,res){
             bcrypt.compare(password, hash, function(err, success) {
                 if (err) throw err;
         if (success && (admin == 1 )){
-            global.connection.query('UPDATE Task SET IsComplete=1 WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
-                if (error) throw error;
-                res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
+			
+			global.connection.query('SELECT * FROM Task WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
+				task_exists = results[0]==undefined
+				if (!task_exists) {
+					global.connection.query('UPDATE Task SET ? WHERE TaskID = ?', [req.query, req.params.id],function (error, results, fields) {
+						if (error) throw error;
+						res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
+					});
+				} else {
+					res.send(JSON.stringify({"status": 402, "error": "invalid TaskID"})); 
+                    console.log("invalid TaskID")
+				}
             });
+            
         } else { // Check if user is attempting to update their own task by checking the Task's ShiftID, the Shift's EmployeeID to see if it matches the user's
             global.connection.query('SELECT ShiftID FROM Task WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
                 if (error) throw error;
@@ -237,13 +247,21 @@ router.put("/api/Complete/Task/:user/:password/:id",function(req,res){
                     if (error) throw error;
                     empid_of_update = results[0].EmployeeID
                     if (empid_of_update != empid){
-                        res.send(JSON.stringify({"status": 401, "error": "invalid credentials"})); 
-                        console.log("invalid credentials")
+                        res.send(JSON.stringify({"status": 401, "error": "invalid credentials: your access is restricted to your own tasks"})); 
+                        console.log("invalid credentials: your access is restricted to your own tasks")
                     } else { // If the user is not the admin, they can only mark their own task as complete
-                        global.connection.query('UPDATE Task SET IsComplete=1 WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
-                            if (error) throw error;
-                            res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
-                        });
+                        global.connection.query('SELECT * FROM Task WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
+							task_exists = results[0]==undefined
+							if (!task_exists) {
+								global.connection.query('UPDATE Task SET ? WHERE TaskID = ?', [req.query, req.params.id],function (error, results, fields) {
+									if (error) throw error;
+									res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
+								});
+							} else {
+								res.send(JSON.stringify({"status": 402, "error": "invalid TaskID"})); 
+								console.log("invalid TaskID")
+							}
+						});
                     }
                 });
             });
@@ -251,6 +269,7 @@ router.put("/api/Complete/Task/:user/:password/:id",function(req,res){
 });
 });
 });
+
 
 
 
