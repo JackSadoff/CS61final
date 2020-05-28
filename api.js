@@ -62,6 +62,12 @@ function get_pkey(table) {
 			return "TaskCodeID";
 		case "Room":
 			return "RoomID";
+		
+		// I don't know if I can just do this. Delete this and lmk if its bad (its not pkey)
+		case "TaskLog":
+			return "TaskLog"
+		case "PatientLog":
+			return "PatientLog"
 		default:
 			return "BadTable";
 	}
@@ -73,7 +79,7 @@ function get_pkey(table) {
 // you can test GETs with a browser using URL http://localhost:3000/api/:table/:user/:password or http://localhost:3000/api/employees/30075445
 // recommend Postman app for testing other verbs, find it at https://www.postman.com/
 router.get("/", function (req, res) {
-	res.send("Yo!  This my API.  Call it right, or don't call it at all!");
+	res.send("Welcome to HeathQdb_sp20, a smart and friendly hospital management system!");
 });
 
 // GET - read data from database, return status code 200 if successful
