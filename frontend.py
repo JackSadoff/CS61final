@@ -207,245 +207,284 @@ def use(username, password):
 	x = "not quit"
 	# response = make_get_call('http://localhost:3000/api/employees/' + str(username))
 	# admin_status = response['response'][0]['AdminRights']
-	admin_status = 1
+	
+	
 
-	# print(admin_status)
-	while (x != "quit"):
-		print("You are currently in the Main panel!")
-		print("--------------------------------------------------")
-		print("Options: ViewInfo, ModifyInfo, AddInfo, DeleteInfo")
-		print("--------------------------------------------------")
-		x = input()
-		os.system('clear')
-
-		if (x == "ViewInfo"):
-			while(x != "back" and x != "quit"):
-				os.system('clear')
-				print("You are currently in the ViewInfo panel!")
-				print("----------------------------------------")
-				print("For more Info please select: Employee, EmployeeShift, EmployeeType, ShiftType, Task, TaskCode, Patient, Room")
-				print("Log Options: TaskLog, PatientLog")
-				print("To go back, simply enter 'back'")
-				print("----------------------------------------")
-				x = input()
-				os.system('clear')
-				if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "Patient"
-					or x == "ShiftType" or x == "Task" or x == "TaskCode" or x == "Room" or x == "TaskLog" or x == "PatientLog"):
-					json_resp = make_get_call(
-					    'http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password))
-					# print(json_resp)
-					read_json_custom(json_resp)
-				elif (x == 'back'):
-					os.system('clear')
-					break
-				elif (x != "back" or x != "quit"):
-					print("That wasn't one of the choices! Try again.")
-
-				print()
-				print("--------------------")
-				print("Hit Enter When Done!")
-				print("--------------------")
-				y = input()
-				os.system('clear')
-
-		elif(x == "ModifyInfo"):
-			while(x != "back" and x != "quit"):
-				os.system('clear')
-				print("You are currently in the ModifyInfo panel!")
-				print("----------------------------------------")
-				print("Modification Options: Employee, EmployeeShift, EmployeeType, Task, TaskCode, Patient, Room")
-				print("To go back, simply enter 'back'")
-				print("----------------------------------------")
-
-				x = input()
-				os.system('clear')
-
-				if (x == "Employee"):
-					objID = input("Which employee would you like to update (ID): ")
-
-					pklist = mod_auth(x, username, password)
-					if int(objID) in pklist:
-						print("Employee Modification Options: EmployeeName, EmployeeTypeID, Salary, IsAdmin")
-						option_list = ['EmployeeName', 'EmployeeTypeID', 'Salary', 'IsAdmin']
-						updates(x, username, password, objID, option_list)
-					else:
-						print("Invalid ID!")
-						print("*******************")
-						input("Press Enter to Continue!")
-
-
-				elif (x == "EmployeeShift"):
-					objID = input("Which shift would you like to update (ShiftID): ")
-					pklist = mod_auth(x, username, password)
-					if int(objID) in pklist:
-						print("EmployeeShift Modification Options: EmployeeID, ShiftTypeID")
-						option_list = ['EmployeeID', 'ShiftTypeID']
-						updates(x, username, password, objID, option_list)
-					else:
-						print("Invalid ID!")
-						print("*******************")
-						input("Press Enter to Continue!")
-
-				elif (x == "EmployeeType"):
-					objID = input("Which employee type would you like to update (TypeID): ") 
-					pklist = mod_auth(x, username, password)
-					if int(objID) in pklist:
-						print("EmployeeType Modification Options: TypeName, TypeDescription")
-						option_list = ['TypeName', 'TypeDescription']
-						updates(x, username, password, objID, option_list)
-					else:
-						print("Invalid ID!")
-						print("*******************")
-						input("Press Enter to Continue!")
-				elif (x == "Patient"):
-					objID = input("Which patient would you like to update (PatientID): ")
-					pklist = mod_auth(x, username, password)
-					if int(objID) in pklist:
-						print("Patient Modification Options: PatientName, PatientDescription")
-						option_list = ['PatientName', 'PatientDescription']
-						updates(x, username, password, objID, option_list)
-					else:
-						print("Invalid ID!")
-						print("*******************")
-						input("Press Enter to Continue!")
-				elif (x == "Task"):
-					objID = input("Which task's completion status would you like to update (TaskID): ")
-					pklist = mod_auth(x, username, password)
-					if int(objID) in pklist:
-						markTask = input("Type 0 if you would like to mark task as incomplete, Type 1 if you would like to mark task as complete: ")
-						while markTask != str(0) and markTask != str(1):
-							markTask = input("Please type 0 or 1 ONLY: ")
-						set_Task(username, password, objID, markTask)
-					else:
-						print("Invalid ID!")
-						print("*******************")
-						input("Press Enter to Continue!")
-
-				elif (x == "TaskCode"):
-					objID = input("Which task code would you like to update (TaskCodeID): ")
-					pklist = mod_auth(x, username, password)
-					if int(objID) in pklist:
-						print("TaskCode Modification Options: TaskName, TaskDescription, Equipment")
-						option_list = ['TaskName', 'TaskDescription', 'Equipment']
-						updates(x, username, password, objID, option_list)
-					else:
-						print("Invalid ID!")
-						print("*******************")
-						input("Press Enter to Continue!")
-
-						
-				elif (x == "Room"):
-					objID = input("Which room would you like to update (RoomID): ")
-					pklist = mod_auth(x, username, password)
-					if int(objID) in pklist:
-						print("Room Modification Options: IsEmpty, Purpose")
-						option_list = ['IsEmpty', 'Purpose']
-						updates(x, username, password, objID, option_list)
-					else:
-						print("Invalid ID!")
-						input("Press Enter to Continue!")
-						
-				elif (x == "back" or x == "quit"):
-					continue
-				elif (x != "back" or x != "quit"):
-					print("That wasn't one of the choices. Try again!")
-					print("--------------------")
-					print("Hit Enter To Continue!")
-
-					y = input()
+	if admin_status == 1:
+		# print(admin_status)
+		while (x != "quit"):
+			print("You are currently in the Main panel!")
+			print("--------------------------------------------------")
+			print("Options: ViewInfo, ModifyInfo, AddInfo, DeleteInfo")
+			print("--------------------------------------------------")
+			x = input()
 			os.system('clear')
-			
 
-
-		elif(x == "AddInfo"): # NEED TO FINISH THIS
-			while(x != "back" and x != "quit"):
-				os.system('clear')
-				print("You are currently in the AddInfo panel!")
-				print("----------------------------------------")
-				print("Addition Options: Employee, EmployeeShift, EmployeeType, Task, TaskCode, Patient, Room")
-				print("To go back, simply enter 'back'")
-				print("----------------------------------------")
-
-				x = input()
-				os.system('clear')
-				if (x == "Employee"):
-					fields = ['EmployeeID', 'EmployeeName', 'EmployeeTypeID', 'Salary', 'StartDate', 'Username', 'Password', 'IsAdmin']
-					add(x, username, password, fields)
-					
-				elif(x == "EmployeeShift"):
-					fields = ['ShiftID', 'EmployeeID', 'Date']
-					add(x, username, password, fields)
-				elif(x == "EmployeeType"):
-					fields = ['EmployeeTypeID', 'TypeName', 'TypeDescription']
-					add(x, username, password, fields)
-				elif(x == "Task"):
-					fields = ['TaskID', 'TaskCodeID', 'IsComplete', 'TimeAssigned', 'RoomID', 'ShiftID']
-					add(x, username, password, fields)
-				elif(x == "TaskCode"):
-					fields = ['TaskCodeID', 'TaskName', 'TaskDescription', 'Equipment']
-					add(x, username, password, fields)
-				elif(x == "Patient"):
-					fields = ['PatientID', 'RoomID', 'PatientName', 'ArrivalDate', 'PatientDescription']
-					add(x, username, password, fields)
-				elif(x == "Room"):
-					fields = ['RoomID', 'IsEmpty', 'Purpose']
-					add(x, username, password, fields)
-				elif (x == "back" or x == "quit"):
-					continue
-				elif (x != "back" or x != "quit"):
-					print("That wasn't one of the choices. Try again!")
-					print("--------------------")
-					print("Hit Enter To Continue!")
-
-		elif (x == "DeleteInfo"):  # NEED TO HANDLE ERRORS SUCH AS INVALID IDS
-			while(x != "back" and x != "quit"):
-				os.system('clear')
-				print("You are currently in the DeleteInfo panel!")
-				print("----------------------------------------")
-				print("Deletion Options: Employee, ShiftType, Shift, EmployeeType, Task, TaskCode, Patient, Room")
-				print("To go back, simply enter 'back'")
-				print("----------------------------------------")
-				objID = ""
-				x = input()
-				os.system('clear')
-				if (x == "Employee" or x == "ShiftType" or x == "EmployeeType" or x == "Patient"
-					or x == "Shift" or x == "Task" or x == "TaskCode" or x == "Room"):
-
-					while objID == "":
-						objID = input("Which " + str(x).lower() + " would you like to delete (" + str(x) + "ID): ")
-
-					pklist = mod_auth(x, username, password)
-					# print(pklist)
-					
-					if int(objID) in pklist:
-						try:
-							json_resp = make_delete_call('http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + \
-								str(password) + '/' + str(objID))
-							print(json_resp)
-						except:
-							print("Erroneous Entry! Please try again.")
-							print("For reference here is a list of valid delete ID's")
-					else:		
-						print("Invalid ID!")
-
-					
+			if (x == "ViewInfo"):
+				while(x != "back" and x != "quit"):
+					os.system('clear')
+					print("You are currently in the ViewInfo panel!")
+					print("----------------------------------------")
+					print("For more Info please select: Employee, EmployeeShift, EmployeeType, ShiftType, Task, TaskCode, Patient, Room")
+					print("Log Options: TaskLog, PatientLog")
+					print("To go back, simply enter 'back'")
+					print("----------------------------------------")
+					x = input()
+					os.system('clear')
+					if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "Patient"
+						or x == "ShiftType" or x == "Task" or x == "TaskCode" or x == "Room" or x == "TaskLog" or x == "PatientLog"):
+						json_resp = make_get_call(
+							'http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password))
+						# print(json_resp)
+						read_json_custom(json_resp)
+					elif (x == 'back'):
+						os.system('clear')
+						break
+					elif (x != "back" or x != "quit"):
+						print("That wasn't one of the choices! Try again.")
 
 					print()
 					print("--------------------")
-					print("Hit Enter To Continue!")
+					print("Hit Enter When Done!")
 					print("--------------------")
 					y = input()
-
 					os.system('clear')
-				elif (x == "back" or x == "quit"):
-					continue
-				elif (x != "back" or x != "quit"):
-					print("That wasn't one of the choices. Try again!")
-					print("--------------------")
-					print("Hit Enter To Continue!")
 
-					y = input()
+			elif(x == "ModifyInfo"):
+				while(x != "back" and x != "quit"):
+					os.system('clear')
+					print("You are currently in the ModifyInfo panel!")
+					print("----------------------------------------")
+					print("Modification Options: Employee, EmployeeShift, EmployeeType, Task, TaskCode, Patient, Room")
+					print("To go back, simply enter 'back'")
+					print("----------------------------------------")
+
+					x = input()
+					os.system('clear')
+
+					if (x == "Employee"):
+						objID = input("Which employee would you like to update (ID): ")
+
+						pklist = mod_auth(x, username, password)
+						if int(objID) in pklist:
+							print("Employee Modification Options: EmployeeName, EmployeeTypeID, Salary, IsAdmin")
+							option_list = ['EmployeeName', 'EmployeeTypeID', 'Salary', 'IsAdmin']
+							updates(x, username, password, objID, option_list)
+						else:
+							print("Invalid ID!")
+							print("*******************")
+							input("Press Enter to Continue!")
+
+
+					elif (x == "EmployeeShift"):
+						objID = input("Which shift would you like to update (ShiftID): ")
+						pklist = mod_auth(x, username, password)
+						if int(objID) in pklist:
+							print("EmployeeShift Modification Options: EmployeeID, ShiftTypeID")
+							option_list = ['EmployeeID', 'ShiftTypeID']
+							updates(x, username, password, objID, option_list)
+						else:
+							print("Invalid ID!")
+							print("*******************")
+							input("Press Enter to Continue!")
+
+					elif (x == "EmployeeType"):
+						objID = input("Which employee type would you like to update (TypeID): ") 
+						pklist = mod_auth(x, username, password)
+						if int(objID) in pklist:
+							print("EmployeeType Modification Options: TypeName, TypeDescription")
+							option_list = ['TypeName', 'TypeDescription']
+							updates(x, username, password, objID, option_list)
+						else:
+							print("Invalid ID!")
+							print("*******************")
+							input("Press Enter to Continue!")
+					elif (x == "Patient"):
+						objID = input("Which patient would you like to update (PatientID): ")
+						pklist = mod_auth(x, username, password)
+						if int(objID) in pklist:
+							print("Patient Modification Options: PatientName, PatientDescription")
+							option_list = ['PatientName', 'PatientDescription']
+							updates(x, username, password, objID, option_list)
+						else:
+							print("Invalid ID!")
+							print("*******************")
+							input("Press Enter to Continue!")
+					elif (x == "Task"):
+						objID = input("Which task's completion status would you like to update (TaskID): ")
+						pklist = mod_auth(x, username, password)
+						if int(objID) in pklist:
+							markTask = input("Type 0 if you would like to mark task as incomplete, Type 1 if you would like to mark task as complete: ")
+							while markTask != str(0) and markTask != str(1):
+								markTask = input("Please type 0 or 1 ONLY: ")
+							set_Task(username, password, objID, markTask)
+						else:
+							print("Invalid ID!")
+							print("*******************")
+							input("Press Enter to Continue!")
+
+					elif (x == "TaskCode"):
+						objID = input("Which task code would you like to update (TaskCodeID): ")
+						pklist = mod_auth(x, username, password)
+						if int(objID) in pklist:
+							print("TaskCode Modification Options: TaskName, TaskDescription, Equipment")
+							option_list = ['TaskName', 'TaskDescription', 'Equipment']
+							updates(x, username, password, objID, option_list)
+						else:
+							print("Invalid ID!")
+							print("*******************")
+							input("Press Enter to Continue!")
+
+							
+					elif (x == "Room"):
+						objID = input("Which room would you like to update (RoomID): ")
+						pklist = mod_auth(x, username, password)
+						if int(objID) in pklist:
+							print("Room Modification Options: IsEmpty, Purpose")
+							option_list = ['IsEmpty', 'Purpose']
+							updates(x, username, password, objID, option_list)
+						else:
+							print("Invalid ID!")
+							input("Press Enter to Continue!")
+							
+					elif (x == "back" or x == "quit"):
+						continue
+					elif (x != "back" or x != "quit"):
+						print("That wasn't one of the choices. Try again!")
+						print("--------------------")
+						print("Hit Enter To Continue!")
+
+						y = input()
+				os.system('clear')
+				
+
+
+			elif(x == "AddInfo"): # NEED TO FINISH THIS
+				while(x != "back" and x != "quit"):
+					os.system('clear')
+					print("You are currently in the AddInfo panel!")
+					print("----------------------------------------")
+					print("Addition Options: Employee, EmployeeShift, EmployeeType, Task, TaskCode, Patient, Room")
+					print("To go back, simply enter 'back'")
+					print("----------------------------------------")
+
+					x = input()
+					os.system('clear')
+					if (x == "Employee"):
+						fields = ['EmployeeID', 'EmployeeName', 'EmployeeTypeID', 'Salary', 'StartDate', 'Username', 'Password', 'IsAdmin']
+						add(x, username, password, fields)
+						
+					elif(x == "EmployeeShift"):
+						fields = ['ShiftID', 'EmployeeID', 'Date']
+						add(x, username, password, fields)
+					elif(x == "EmployeeType"):
+						fields = ['EmployeeTypeID', 'TypeName', 'TypeDescription']
+						add(x, username, password, fields)
+					elif(x == "Task"):
+						fields = ['TaskID', 'TaskCodeID', 'IsComplete', 'TimeAssigned', 'RoomID', 'ShiftID']
+						add(x, username, password, fields)
+					elif(x == "TaskCode"):
+						fields = ['TaskCodeID', 'TaskName', 'TaskDescription', 'Equipment']
+						add(x, username, password, fields)
+					elif(x == "Patient"):
+						fields = ['PatientID', 'RoomID', 'PatientName', 'ArrivalDate', 'PatientDescription']
+						add(x, username, password, fields)
+					elif(x == "Room"):
+						fields = ['RoomID', 'IsEmpty', 'Purpose']
+						add(x, username, password, fields)
+					elif (x == "back" or x == "quit"):
+						continue
+					elif (x != "back" or x != "quit"):
+						print("That wasn't one of the choices. Try again!")
+						print("--------------------")
+						print("Hit Enter To Continue!")
+
+			elif (x == "DeleteInfo"):  # NEED TO HANDLE ERRORS SUCH AS INVALID IDS
+				while(x != "back" and x != "quit"):
+					os.system('clear')
+					print("You are currently in the DeleteInfo panel!")
+					print("----------------------------------------")
+					print("Deletion Options: Employee, ShiftType, Shift, EmployeeType, Task, TaskCode, Patient, Room")
+					print("To go back, simply enter 'back'")
+					print("----------------------------------------")
+					objID = ""
+					x = input()
+					os.system('clear')
+					if (x == "Employee" or x == "ShiftType" or x == "EmployeeType" or x == "Patient"
+						or x == "Shift" or x == "Task" or x == "TaskCode" or x == "Room"):
+
+						while objID == "":
+							objID = input("Which " + str(x).lower() + " would you like to delete (" + str(x) + "ID): ")
+
+						pklist = mod_auth(x, username, password)
+						# print(pklist)
+
+						if int(objID) in pklist:
+							try:
+								json_resp = make_delete_call('http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + \
+									str(password) + '/' + str(objID))
+								print(json_resp)
+							except:
+								print("Erroneous Entry! Please try again.")
+								print("For reference here is a list of valid delete ID's")
+						else:		
+							print("Invalid ID!")
+
+						
+
+						print()
+						print("--------------------")
+						print("Hit Enter To Continue!")
+						print("--------------------")
+						y = input()
+
+						os.system('clear')
+					elif (x == "back" or x == "quit"):
+						continue
+					elif (x != "back" or x != "quit"):
+						print("That wasn't one of the choices. Try again!")
+						print("--------------------")
+						print("Hit Enter To Continue!")
+
+						y = input()
+				os.system('clear')
+	elif admin_status == 0:
+		while (x != "quit"):
+			print("You are currently in the Main panel!")
+			print("--------------------------------------------------")
+			print("Options: ViewInfo, ModifyInfo")
+			print("--------------------------------------------------")
+			x = input()
 			os.system('clear')
+
+			if (x == "ViewInfo"):
+				while(x != "back" and x != "quit"):
+					os.system('clear')
+					print("You are currently in the ViewInfo panel!")
+					print("----------------------------------------")
+					print("For more Info please select: Employee, EmployeeShift, EmployeeType, ShiftType, Task, TaskCode, Patient, Room")
+					print("To go back, simply enter 'back'")
+					print("----------------------------------------")
+					x = input()
+					os.system('clear')
+					if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "Patient"
+						or x == "ShiftType" or x == "Task" or x == "TaskCode" or x == "Room" or x == "TaskLog" or x == "PatientLog"):
+						json_resp = make_get_call(
+							'http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password))
+						# print(json_resp)
+						read_json_custom(json_resp)
+					elif (x == 'back'):
+						os.system('clear')
+						break
+					elif (x != "back" or x != "quit"):
+						print("That wasn't one of the choices! Try again.")
+
+					print()
+					print("--------------------")
+					print("Hit Enter When Done!")
+					print("--------------------")
+					y = input()
+					os.system('clear')
 
 
 					
