@@ -197,4 +197,6 @@ def use(username, password):
 							
 if __name__ == '__main__':
 	(userID, userpass)= login()
-	use(userID, userpass)
+	# use(userID, userpass)
+	json_resp = make_put_call('http://localhost:3000/api/Complete/Task' + str(userID) + '/' + str(userpass) + "/6", {} )
+	print(json_resp)				
