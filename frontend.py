@@ -11,7 +11,7 @@ def read_json_custom(resp_json):
 		print("*******************************")
 
 def user_login(url, data):
-	resp = requests.get(url, json=data)
+	resp = requests.get(url)
 	if resp.json()['status'] == 401:
 		print('Something went wrong: {}'.format(resp.json()['error']))
 		exit()
@@ -21,6 +21,7 @@ def user_login(url, data):
 	else:
 		print('Login Succeeded {}'.format(resp.status_code))
 	
+	
 	return resp.json()['response']
 
 
@@ -29,15 +30,24 @@ def login():
 	inputusername = input("Enter Username: ")
 	# print("Enter Password: ")
 	inputpass = input("Enter Password: ")
-	auth = {
-		"table": "Employees",
-		"username": inputusername,
-		"password": inputpass
-	}
-	resp_json = user_login('http://localhost:3000/api/Employee/' +
-	           str(inputusername) + "/" + str(inputpass), auth)
+	# auth = {
+	# 	"table": "Employees",
+	# 	"username": inputusername,
+	# 	"password": inputpass
+	# }
 
-	return inputusername, inputpass
+	resp_json = user_login('http://localhost:3000/api/Employee/' +
+	           str(inputusername) + "/" + str(inputpass), {})
+
+	admin_status = 0
+
+	for row in resp_json:
+		
+		if row['Username'] == str(inputusername):
+			if row['IsAdmin'] == str(1):
+				admin_status = 1
+
+	return inputusername, inputpass, admin_status
 
 
 def updates(x, username, password, objID, options):
@@ -203,17 +213,17 @@ def make_delete_call(url):
 	return resp.json()['response']
 
 
-def use(username, password):
+def use(username, password, admin_status):
 	x = "not quit"
 	# response = make_get_call('http://localhost:3000/api/employees/' + str(username))
 	# admin_status = response['response'][0]['AdminRights']
 	
-	
 
 	if admin_status == 1:
-		# print(admin_status)
+		
+
 		while (x != "quit"):
-			print("You are currently in the Main panel!")
+			print("You are currently in the Main Admin panel!")
 			print("--------------------------------------------------")
 			print("Options: ViewInfo, ModifyInfo, AddInfo, DeleteInfo")
 			print("--------------------------------------------------")
@@ -450,7 +460,7 @@ def use(username, password):
 				os.system('clear')
 	elif admin_status == 0:
 		while (x != "quit"):
-			print("You are currently in the Main panel!")
+			print("You are currently in the Main User panel!")
 			print("--------------------------------------------------")
 			print("Options: ViewInfo, ModifyInfo")
 			print("--------------------------------------------------")
@@ -489,6 +499,6 @@ def use(username, password):
 
 					
 if __name__ == '__main__':
-	(userID, userpass)= login()
-	use(userID, userpass)
+	(userID, userpass, admin_status)= login()
+	use(userID, userpass, admin_status)
 	# print(resp_json)

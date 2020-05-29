@@ -5,6 +5,10 @@
 	To run: nodemon api.js <local|sunapee>
 	App will use the database credentials and port stored in config.js for local or sunapee server
 	Recommend Postman app for testing verbs other than GET, find Postman at https://www.postman.com/
+
+	AUTO Restart Server: nodemon api.js -x 'node api.js || touch api.js'
+
+
 */
 
 var express = require('express');
