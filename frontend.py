@@ -104,14 +104,31 @@ def updates(x, username, password, objID, options):
 
 	os.system('clear')
 
+def pkname(x):
+	# Employee, EmployeeShift, EmployeeType, Task, TaskCode, Patient, Room
+	if x == "Employee":
+		return "EmployeeID"
+	elif x == "EmployeeShift":
+		return "EmployeeShiftID"
+	elif x == "EmployeeType":
+		return "EmployeeTypeID"
+	elif x == "Task":
+		return "TaskID"
+	elif x == "TaskCode":
+		return "TaskCodeID"
+	elif x == "Patient":
+		return "PatientID"
+	elif x == "Room":
+		return "RoomID"
+
 def mod_auth(x, username, password):
 	json_resp = make_get_call('http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password))
 	
+	pk = pkname(x)
 	pklist = []
 	for row in json_resp:
-		for entry in row:
-			pklist.append(row[entry])
-			break
+		pklist.append(row[pk])
+	
 	print("Valid Keys:", end="")
 	for i in range(len(pklist) - 1):
 		print(str(pklist[i]) + ",", end="")
@@ -462,7 +479,7 @@ def use(username, password, admin_status):
 		while (x != "quit"):
 			print("You are currently in the Main User panel!")
 			print("--------------------------------------------------")
-			print("Options: ViewInfo, ModifyInfo")
+			print("Options: ViewInfo, CompleteTask")
 			print("--------------------------------------------------")
 			x = input()
 			os.system('clear')
@@ -478,10 +495,15 @@ def use(username, password, admin_status):
 					x = input()
 					os.system('clear')
 					if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "Patient"
-						or x == "ShiftType" or x == "Task" or x == "TaskCode" or x == "Room" or x == "TaskLog" or x == "PatientLog"):
+						or x == "ShiftType" or x == "TaskCode" or x == "Room" or x == "TaskLog" or x == "PatientLog"):
 						json_resp = make_get_call(
 							'http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password))
 						# print(json_resp)
+						read_json_custom(json_resp)
+					elif  x == "Task":
+						json_resp = make_get_call('http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password) + "/0 or TRUE?IsComplete=0" )
+						# print(json_resp)
+						
 						read_json_custom(json_resp)
 					elif (x == 'back'):
 						os.system('clear')
@@ -495,6 +517,64 @@ def use(username, password, admin_status):
 					print("--------------------")
 					y = input()
 					os.system('clear')
+
+			elif(x == "CompleteTask"):
+				while(x != "back" and x != "quit"):
+					os.system('clear')
+					print("You are currently in the CompleteTask panel!")
+					print("----------------------------------------")
+					
+					print("Options: UpdateTaskStatus")
+					print("To go back, simply enter 'back'")
+					print("----------------------------------------")
+
+					x = input()
+					os.system('clear')
+
+					if (x == "UpdateTaskStatus"):
+						objID = input("Which task's completion status would you like to update (TaskID): ")
+						# pklist = mod_auth(x, username, password)
+						# if int(objID) in pklist:
+						markTask = input("Type 1 if you would like to mark task as complete: ")
+						while markTask != str(0) and markTask != str(1):
+							markTask = input("Please type 1 ONLY: ")
+						set_Task(username, password, objID, markTask)
+						# else:
+						# 	print("Invalid ID!")
+						# 	print("*******************")
+						# 	input("Press Enter to Continue!")
+					elif (x == "back" or x == "quit"):
+						continue
+					elif (x != "back" or x != "quit"):
+						print("That wasn't one of the choices. Try again!")
+						print("--------------------")
+						print("Hit Enter To Continue!")
+
+						y = input()
+				os.system('clear')
+			# elif (x == "UpdatePatientFiles"):
+			# 	while(x != "back" and x != "quit"):
+			# 		os.system('clear')
+			# 		print("You are currently in the UpdatePatientFiles panel!")
+			# 		print("----------------------------------------")
+
+			# 		objID = input("Which patient would you like to update (PatientID): ")
+
+			# 		print("----------------------------------------")
+			# 		print("Options: PatientName, PatientDescription")
+			# 		print("To go back, simply enter 'back'")
+			# 		print("----------------------------------------")
+
+
+			# 		option_list = ['PatientName', 'PatientDescription']
+			# 		updates(x, username, password, objID, option_list)
+					
+			# 		print("--------------------")
+			# 		print("Hit Enter To Continue!")
+			# 		input()
+				
+
+
 
 
 					

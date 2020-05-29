@@ -47,33 +47,209 @@ router.use(function (req, res, next) {
 	next();
 });
 
+function userRestriction(table, admin, empId){
+
+	const simple_tables = ["EmployeeType", "ShiftType", "TaskCode"];
+	qry="";
+	
+	if (admin==1 || simple_tables.includes(table)){
+		return qry;
+	}
+
+	switch(table){
+		
+	case "Employee":
+		qry=qry.concat(" EmployeeID in (SELECT DISTINCT EmployeeID FROM Employee where EmployeeID=",empId,")");
+		break;
+
+	break;
+
+	case "Patient":
+		qry=qry.concat(" PatientID in (SELECT DISTINCT PatientID FROM EmployeeShift JOIN (Task JOIN (Room JOIN Patient USING(RoomID)) USING(RoomID)) USING(ShiftID) where EmployeeID=",empId,")");
+		break;
+
+	case "Task":	
+		qry=qry.concat(" TaskID in (SELECT DISTINCT TaskID FROM EmployeeShift JOIN Task USING(ShiftID) where EmployeeID=",empId,")");
+		break;
+	case "EmployeeShift":
+	  qry=qry.concat(" ShiftID in (SELECT DISTINCT ShiftID FROM EmployeeShift where EmployeeID=",empId,")");
+		break;
+
+	case "Room":	
+		qry=qry.concat(" TaskID in (SELECT DISTINCT TaskID FROM EmployeeShift JOIN Task USING(ShiftID) where EmployeeID=",empId,")");
+		break;
+
+	case "TaskLog":
+		qry= " False"
+		break;
+
+	case "PatientLog":
+		qry = " False";
+		break;
+
+	default:
+		qry =  "bad_table"		
+		break;
+
+	}
+console.log(qry)
+	return qry;
+
+}
+
+
+function build_complex_get(table, admin, empId, addQr){
+	
+	var qry="";
+	const simple_tables = ["EmployeeType", "ShiftType", "TaskCode"];
+	const constrained_tables= ["Employee","Patient", "Room","Task","EmployeeShift"]; 
+	
+	if (admin==0 && (table=="TaskLog" || table=="PatientLog")){
+		return qry;
+	}
+
+	switch (table) {
+		case "Employee":
+			qry = "SELECT * FROM Employee JOIN EmployeeType USING(EmployeeTypeID)";
+			break;
+
+		case "EmployeeShift":
+			qry = "SELECT * FROM ShiftType JOIN (EmployeeShift JOIN (Employee JOIN EmployeeType USING(EmployeeTypeID)) USING(EmployeeID)) USING(ShiftTypeID)";
+			break;
+
+		case "EmployeeType":
+			qry = "SELECT * FROM EmployeeType";
+			break;
+
+		case "Patient":
+			qry = "SELECT * FROM Patient JOIN (Room JOIN (TaskCode JOIN (Task JOIN (ShiftType JOIN (EmployeeShift JOIN (Employee JOIN EmployeeType USING(EmployeeTypeID)) USING(EmployeeID)) USING (ShiftTypeID)) USING(ShiftID)) USING (TaskCodeID)) USING(RoomID)) USING(RoomID)";
+			break;
+
+		case "ShiftType":
+			qry="SELECT * FROM ShiftType;";
+			break;
+
+		case "Task":	
+			qry = "SELECT * FROM TaskCode JOIN (Task JOIN (ShiftType JOIN (EmployeeShift JOIN (Employee JOIN EmployeeType USING(EmployeeTypeID)) USING(EmployeeID)) USING (ShiftTypeID)) USING(ShiftID)) USING (TaskCodeID)";
+			break;
+
+		case "TaskCode":
+			qry  = "SELECT * FROM TaskCode;";
+			break;
+
+		case "Room":
+			qry = "SELECT * FROM Room JOIN (TaskCode JOIN (Task JOIN (ShiftType JOIN (EmployeeShift JOIN (Employee JOIN EmployeeType USING(EmployeeTypeID)) USING(EmployeeID)) USING (ShiftTypeID)) USING(ShiftID)) USING (TaskCodeID)) USING(RoomID)";
+			break;
+
+		case "TaskLog":
+			qry = "SELECT * FROM TaskLog";
+			break;
+
+		case "PatientLog":
+			qry = "SELECT * FROM PatientLog";
+			break;
+
+		default:
+			qry = "bad_table";
+			break;
+
+			}
+	
+	if (admin==0 && constrained_tables.includes(table)){
+		qry=qry.concat(" WHERE ",userRestriction(table,admin,empId))
+		 }	 
+	
+	if (addQr && (simple_tables.includes(table) || admin==1 )){
+		qry=qry.concat(" WHERE ? ");
+	} else if (addQr) {
+		qry=qry.concat(" AND ?")
+	}
+
+	return qry
+
+}
+
+
+function build_simple_get(table, admin, empId,mainVal, addQr){
+	
+	var qry="";
+	const simple_tables = ["EmployeeType", "ShiftType","Room", "TaskCode"];
+	const constrained_tables= ["Employee","Patient", "Task","EmployeeShift"]; 
+	
+	if (admin==0 && (table=="TaskLog" || table=="PatientLog")){
+		return qry;
+	}
+	
+	qry=qry.concat("SELECT * FROM ",table," WHERE ",get_pkey(table)," = ",mainVal)
+
+	if (admin==0 && constrained_tables.includes(table)){
+		qry=qry.concat(" AND ",userRestriction(table,admin,empId))
+	}	 
+	
+	if (addQr) {
+		console.log("HERE")
+		qry=qry.concat(" AND ?")
+	}
+
+	return qry
+
+}
+
+function build_normal_put(table, admin, empId,mainVal){
+	
+	var qry="";
+	if (admin==0 &&  table == "Task"){
+	qry=qry.concat("UPDATE Task SET `IsComplete` = '1'  WHERE TaskID = ",mainVal)
+	} else {
+	qry=qry.concat("UPDATE ", table, " SET ? WHERE ", get_pkey(table), " = ",mainVal);
+	}
+	if (admin==0 ){
+		qry=qry.concat(" AND ",userRestriction(table,admin,empId))
+	}	 
+	
+
+	return qry
+
+}
+
+
+
 function get_pkey(table) {
 
 	switch (table) {
 		case "Employee":
 			return "EmployeeID";
+
 		case "EmployeeShift":
 			return "ShiftID";
+
 		case "EmployeeType":
 			return "EmployeeTypeID";
+
 		case "Patient":
 			return "PatientID";
+
 		case "ShiftType":
 			return "ShiftTypeID";
+
 		case "Task":
 			return "TaskID";
+
 		case "TaskCode":
 			return "TaskCodeID";
+
 		case "Room":
 			return "RoomID";
-		
-		// I don't know if I can just do this. Delete this and lmk if its bad (its not pkey)
+
 		case "TaskLog":
-			return "TaskLog"
+			return "TaskID";
+
 		case "PatientLog":
-			return "PatientLog"
+			return "PatientID";
+
 		default:
 			return "BadTable";
+
 	}
 
 }
@@ -101,11 +277,12 @@ router.get("/api/:table/:user/:password", function (req, res) {
 		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
 		bcrypt.compare(password, hash, function (err, success) {
 			if (err) throw err;
-			if (success && (admin == 1)) {
-				qr_str = "";
-				qr_str = qr_str.concat("Select * FROM ", table, " WHERE True ?")
-				var quer = req.query
-				// get all employees (limited to first 10 here), return status code 200
+			if (success && (admin==1 || (table!="PatientLog" && table != "TaskLog"))) {
+				var quer = req.query;
+				var qr_str = build_complex_get(table, admin, empid,Object.keys(quer).length !== 0)
+				console.log(qr_str);
+		
+				
 				global.connection.query(qr_str, [quer], function (error, results, fields) {
 					if (error) throw error;
 					res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
@@ -121,9 +298,9 @@ router.get("/api/:table/:user/:password", function (req, res) {
 
 
 router.get("/api/:table/:user/:password/:id", function (req, res) {
-	console.log(req.params.id);
+//	console.log(req.params.id);
 	const table = req.params.table;
-	const p_key = get_pkey(table);
+//	const p_key = get_pkey(table);
 	const username = req.params.user;
 	const password = req.params.password;
 	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
@@ -135,13 +312,14 @@ router.get("/api/:table/:user/:password/:id", function (req, res) {
 		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
 		bcrypt.compare(password, hash, function (err, success) {
 			if (err) throw err;
-			if (success && (admin == 1)) {
+			if (success &&(admin == 1 || (table!="PatientLog" && table != "TaskLog"))) {
+				var quer = req.query;
+				var qr_str = build_simple_get(table, admin, empid,req.params.id,Object.keys(quer).length !== 0)
+				console.log(qr_str);
 
-				qr_str = ""
-				qr_str = qr_str.concat("Select * FROM ", table, " WHERE ", p_key, " = ?")
-				// get all employees (limited to first 10 here), return status code 200
-				//read a single employee with RestauantID = req.params.id (the :id in the url above), return status code 200 if successful, 404 if not
-				global.connection.query(qr_str, [req.params.id], function (error, results, fields) {
+		//		qr_str = ""
+		//		qr_str = qr_str.concat("Select * FROM ", table, " WHERE ", p_key, " = ?")
+				global.connection.query(qr_str, [quer], function (error, results, fields) {
 					if (error) throw error;
 					res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
 				});
@@ -158,7 +336,7 @@ router.get("/api/:table/:user/:password/:id", function (req, res) {
 router.put("/api/:table/:user/:password/:id", function (req, res) {
 	console.log(req.query);
 	const table = req.params.table;
-	const p_key = get_pkey(table);
+//	const p_key = get_pkey(table);
 	const username = req.params.user;
 	const password = req.params.password;
 	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
@@ -170,10 +348,11 @@ router.put("/api/:table/:user/:password/:id", function (req, res) {
 		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
 		bcrypt.compare(password, hash, function (err, success) {
 			if (err) throw err;
-			if (success && (admin == 1)) {
-				var quer = req.query
-				quer_str = "";
-				quer_str = quer_str.concat("UPDATE ", table, " SET ? WHERE ", p_key, " = ?");
+			if (success && (admin == 1 || table == "Patient" || table == "Task")) {
+				var quer = req.query;
+				var quer_str = "";
+				quer_str = build_normal_put(table, admin, empid,req.params.id);
+				
 				if (table == "Employee") {
 					bcrypt.genSalt(saltRounds, function (err, salt) {
 						if (err) throw error;
