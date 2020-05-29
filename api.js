@@ -98,12 +98,12 @@ console.log(qry)
 }
 
 
-function build_complex_get(table, admin, empId, addQr){
+function build_complex_get(table, admin, empId, addQr,date1=false,date2=false,usingdate=false){
 	
 	var qry="";
 	const simple_tables = ["EmployeeType", "ShiftType", "TaskCode"];
 	const constrained_tables= ["Employee","Patient", "Room","Task","EmployeeShift"]; 
-	
+	const dated_tables = ["Patient", "Room","Task","EmployeeShift"]; 
 	if (admin==0 && (table=="TaskLog" || table=="PatientLog")){
 		return qry;
 	}
@@ -122,7 +122,7 @@ function build_complex_get(table, admin, empId, addQr){
 			break;
 
 		case "Patient":
-			qry = "SELECT * FROM Patient JOIN (Room JOIN (TaskCode JOIN (Task JOIN (ShiftType JOIN (EmployeeShift JOIN (Employee JOIN EmployeeType USING(EmployeeTypeID)) USING(EmployeeID)) USING (ShiftTypeID)) USING(ShiftID)) USING (TaskCodeID)) USING(RoomID)) USING(RoomID)";
+			qry = "SELECT * FROM Patient JOIN (Room JOIN (TaskCode JOIN (Task JOIN  EmployeeShift  USING(ShiftID)) USING (TaskCodeID)) USING(RoomID)) USING(RoomID)";
 			break;
 
 		case "ShiftType":
@@ -130,7 +130,7 @@ function build_complex_get(table, admin, empId, addQr){
 			break;
 
 		case "Task":	
-			qry = "SELECT * FROM TaskCode JOIN (Task JOIN (ShiftType JOIN (EmployeeShift JOIN (Employee JOIN EmployeeType USING(EmployeeTypeID)) USING(EmployeeID)) USING (ShiftTypeID)) USING(ShiftID)) USING (TaskCodeID)";
+			qry = "SELECT * FROM TaskCode JOIN (Task JOIN  EmployeeShift USING(ShiftID)) USING (TaskCodeID)";
 			break;
 
 		case "TaskCode":
@@ -138,7 +138,7 @@ function build_complex_get(table, admin, empId, addQr){
 			break;
 
 		case "Room":
-			qry = "SELECT * FROM Room JOIN (TaskCode JOIN (Task JOIN (ShiftType JOIN (EmployeeShift JOIN (Employee JOIN EmployeeType USING(EmployeeTypeID)) USING(EmployeeID)) USING (ShiftTypeID)) USING(ShiftID)) USING (TaskCodeID)) USING(RoomID)";
+			qry = "SELECT * FROM Room JOIN (TaskCode JOIN (Task JOIN EmployeeShift  USING(ShiftID)) USING (TaskCodeID)) USING(RoomID)";
 			break;
 
 		case "TaskLog":
@@ -164,13 +164,21 @@ function build_complex_get(table, admin, empId, addQr){
 	} else if (addQr) {
 		qry=qry.concat(" AND ?")
 	}
-
+	if (usingdate && dated_tables.includes(table) ){
+		
+		if (addQr || (admin==0 &&constrained_tables.includes(table))){
+	  		qry=qry.concat(" AND ");
+		} else {
+			qry=qry.concat(" WHERE ");
+		}
+		qry=qry.concat(" `Date` BETWEEN '",date1,"' AND '",date2,"'")
+	}
 	return qry
 
 }
 
 
-function build_simple_get(table, admin, empId,mainVal, addQr){
+function build_simple_get(table, admin, empId,mainVal, addQr,entireTable=false){
 	
 	var qry="";
 	const simple_tables = ["EmployeeType", "ShiftType","Room", "TaskCode"];
@@ -179,15 +187,17 @@ function build_simple_get(table, admin, empId,mainVal, addQr){
 	if (admin==0 && (table=="TaskLog" || table=="PatientLog")){
 		return qry;
 	}
-	
+	if (entireTable){
+	qry=qry.concat("SELECT * FROM ",table," WHERE TRUE")
+	} else {
 	qry=qry.concat("SELECT * FROM ",table," WHERE ",get_pkey(table)," = ",mainVal)
+	} 
 
 	if (admin==0 && constrained_tables.includes(table)){
 		qry=qry.concat(" AND ",userRestriction(table,admin,empId))
 	}	 
 	
 	if (addQr) {
-		console.log("HERE")
 		qry=qry.concat(" AND ?")
 	}
 
@@ -269,14 +279,14 @@ router.get("/api/:table/:user/:password", function (req, res) {
 	const username = req.params.user;
 	const password = req.params.password;
 	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
-		if (error) throw error;
+		if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 		if (results[0] == undefined) {
 			res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
 			return;
 		}
 		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
 		bcrypt.compare(password, hash, function (err, success) {
-			if (err) throw err;
+			if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 			if (success && (admin==1 || (table!="PatientLog" && table != "TaskLog"))) {
 				var quer = req.query;
 				var qr_str = build_complex_get(table, admin, empid,Object.keys(quer).length !== 0)
@@ -284,7 +294,7 @@ router.get("/api/:table/:user/:password", function (req, res) {
 		
 				
 				global.connection.query(qr_str, [quer], function (error, results, fields) {
-					if (error) throw error;
+					if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 					res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
 				});
 			} else {
@@ -296,6 +306,38 @@ router.get("/api/:table/:user/:password", function (req, res) {
 	});
 });
 
+router.get("/api/:table/:user/:password/date/:date1/:date2", function (req, res) {
+	const table = req.params.table;
+	const p_key = get_pkey(table);
+	const username = req.params.user;
+	const password = req.params.password;
+	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
+		if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
+		if (results[0] == undefined) {
+			res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
+			return;
+		}
+		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
+		bcrypt.compare(password, hash, function (err, success) {
+			if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
+			if (success && (admin==1 || (table!="PatientLog" && table != "TaskLog"))) {
+				var quer = req.query;
+				var qr_str = build_complex_get(table, admin, empid,Object.keys(quer).length !== 0,req.params.date1,req.params.date2,true)
+				console.log(qr_str);
+		
+				
+				global.connection.query(qr_str, [quer], function (error, results, fields) {
+					if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
+					res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
+				});
+			} else {
+
+				res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
+				console.log("invalid credentials")
+			}
+		});
+	});
+});
 
 router.get("/api/:table/:user/:password/:id", function (req, res) {
 //	console.log(req.params.id);
@@ -304,14 +346,14 @@ router.get("/api/:table/:user/:password/:id", function (req, res) {
 	const username = req.params.user;
 	const password = req.params.password;
 	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
-		if (error) throw error;
+		if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 		if (results[0] == undefined) {
 			res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
 			return;
 		}
 		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
 		bcrypt.compare(password, hash, function (err, success) {
-			if (err) throw err;
+			if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 			if (success &&(admin == 1 || (table!="PatientLog" && table != "TaskLog"))) {
 				var quer = req.query;
 				var qr_str = build_simple_get(table, admin, empid,req.params.id,Object.keys(quer).length !== 0)
@@ -320,7 +362,7 @@ router.get("/api/:table/:user/:password/:id", function (req, res) {
 		//		qr_str = ""
 		//		qr_str = qr_str.concat("Select * FROM ", table, " WHERE ", p_key, " = ?")
 				global.connection.query(qr_str, [quer], function (error, results, fields) {
-					if (error) throw error;
+					if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 					res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
 				});
 			} else {
@@ -331,7 +373,39 @@ router.get("/api/:table/:user/:password/:id", function (req, res) {
 	});
 });
 
+router.get("/api/:table/:user/:password/:id/table", function (req, res) {
+//	console.log(req.params.id);
+	const table = req.params.table;
+//	const p_key = get_pkey(table);
+	const username = req.params.user;
+	const password = req.params.password;
+	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
+		if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
+		if (results[0] == undefined) {
+			res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
+			return;
+		}
+		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
+		bcrypt.compare(password, hash, function (err, success) {
+			if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
+			if (success &&(admin == 1 || (table!="PatientLog" && table != "TaskLog"))) {
+				var quer = req.query;
+				var qr_str = build_simple_get(table, admin, empid,req.params.id,Object.keys(quer).length !== 0,true)
+				console.log(qr_str);
 
+		//		qr_str = ""
+		//		qr_str = qr_str.concat("Select * FROM ", table, " WHERE ", p_key, " = ?")
+				global.connection.query(qr_str, [quer], function (error, results, fields) {
+					if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
+					res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
+				});
+			} else {
+				res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
+				console.log("invalid credentials")
+			}
+		});
+	});
+});
 // PUT - UPDATE data in database, make sure to get the ID of the row to update from URL route, return status code 200 if successful
 router.put("/api/:table/:user/:password/:id", function (req, res) {
 	console.log(req.query);
@@ -340,14 +414,14 @@ router.put("/api/:table/:user/:password/:id", function (req, res) {
 	const username = req.params.user;
 	const password = req.params.password;
 	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
-		if (error) throw error;
+		if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 		if (results[0] == undefined) {
 			res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
 			return;
 		}
 		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
 		bcrypt.compare(password, hash, function (err, success) {
-			if (err) throw err;
+			if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 			if (success && (admin == 1 || table == "Patient" || table == "Task")) {
 				var quer = req.query;
 				var quer_str = "";
@@ -355,10 +429,10 @@ router.put("/api/:table/:user/:password/:id", function (req, res) {
 				
 				if (table == "Employee") {
 					bcrypt.genSalt(saltRounds, function (err, salt) {
-						if (err) throw error;
+						if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 
 						bcrypt.hash(req.query.Password, salt, null, function (err, hash) {
-							if (err) throw error;
+							if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 							console.log(hash);
 							if (typeof quer.Password !== 'undefined') {
 								quer.Password = hash;
@@ -366,14 +440,14 @@ router.put("/api/:table/:user/:password/:id", function (req, res) {
 							console.log(quer);
 							//read a single employee with RestauantID = req.params.id (the :id in the url above), return status code 200 if successful, 404 if not
 							global.connection.query(quer_str, [quer, req.params.id], function (error, results, fields) {
-								if (error) throw error;
+								if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 								res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
 							});
 						});
 					});
 				} else {
 					global.connection.query(quer_str, [quer, req.params.id], function (error, results, fields) {
-						if (error) throw error;
+						if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 						res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
 					});
 
@@ -399,21 +473,21 @@ router.put("/api/Complete/Task/:user/:password/:id",function(req,res){
     const password=req.params.password;
     var empid=0
     global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username],function (error, results, fields) {
-        if (error) throw error;
+        if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
         if (results[0]==undefined){
                 res.send(JSON.stringify({"status": 401, "error": "invalid credentials"}));
                 return;
                 }
                 const hash = results[0].Password;const admin=results[0].IsAdmin;empid=results[0].EmployeeID;
             bcrypt.compare(password, hash, function(err, success) {
-                if (err) throw err;
+                if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
         if (success && (admin == 1 )){
 			
 			global.connection.query('SELECT * FROM Task WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
 				task_exists = results[0]==undefined
 				if (!task_exists) {
 					global.connection.query('UPDATE Task SET ? WHERE TaskID = ?', [req.query, req.params.id],function (error, results, fields) {
-						if (error) throw error;
+						if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 						res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
 					});
 				} else {
@@ -424,10 +498,10 @@ router.put("/api/Complete/Task/:user/:password/:id",function(req,res){
             
         } else { // Check if user is attempting to update their own task by checking the Task's ShiftID, the Shift's EmployeeID to see if it matches the user's
             global.connection.query('SELECT ShiftID FROM Task WHERE TaskID = ?', [req.params.id],function (error, results, fields) {
-                if (error) throw error;
+                if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
                 console.log(results[0].ShiftID)
                 global.connection.query('SELECT EmployeeID FROM EmployeeShift WHERE ShiftID = ?', [results[0].ShiftID], function (error, results, fields) {
-                    if (error) throw error;
+                    if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
                     empid_of_update = results[0].EmployeeID
                     if (empid_of_update != empid){
                         res.send(JSON.stringify({"status": 401, "error": "invalid credentials: your access is restricted to your own tasks"})); 
@@ -437,7 +511,7 @@ router.put("/api/Complete/Task/:user/:password/:id",function(req,res){
 							task_exists = results[0]==undefined
 							if (!task_exists) {
 								global.connection.query('UPDATE Task SET ? WHERE TaskID = ?', [req.query, req.params.id],function (error, results, fields) {
-									if (error) throw error;
+									if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 									res.send(JSON.stringify({"status": 200, "error": null, "response": results}));
 								});
 							} else {
@@ -465,7 +539,7 @@ router.post("/api/:table/:user/:password", function (req, res) {
 	const password = req.params.password;
 	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
 		//	if (username!="admin" && password != "admin"){
-		if (error) throw error;
+		if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 		if (results[0] == undefined) {
 			res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
 			return;
@@ -476,7 +550,7 @@ router.post("/api/:table/:user/:password", function (req, res) {
 		//	hash=234234
 		//	}
 		bcrypt.compare(password, hash, function (err, success) {
-			//	if (err) throw err;
+			//	if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 			//	if (success && admin == 1){
 			if (admin == 1) {
 				var quer = req.query
@@ -486,23 +560,23 @@ router.post("/api/:table/:user/:password", function (req, res) {
 				console.log(qr_str);
 				if (table == "Employee") {
 					bcrypt.genSalt(saltRounds, function (err, salt) {
-						if (err) throw error;
+						if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 
 						bcrypt.hash(req.query.Password, salt, null, function (err, hash) {
-							if (err) throw error;
+							if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 							console.log(hash);
 							quer.Password = hash;
 							console.log(quer);
 							//read a single employee with RestauantID = req.params.id (the :id in the url above), return status code 200 if successful, 404 if not
 							global.connection.query(qr_str, [quer], function (error, results, fields) {
-								if (error) throw error;
+								if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 								res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
 							});
 						});
 					});
 				} else {
 					global.connection.query(qr_str, [quer], function (error, results, fields) {
-						if (error) throw error;
+						if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 						res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
 					});
 
@@ -526,20 +600,20 @@ router.delete("/api/:table/:user/:password/:id", function (req, res) {
 	const username = req.params.user;
 	const password = req.params.password;
 	global.connection.query('SELECT Password, IsAdmin, EmployeeID FROM Employee WHERE Username = ?', [username], function (error, results, fields) {
-		if (error) throw error;
+		if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 		if (results[0] == undefined) {
 			res.send(JSON.stringify({ "status": 401, "error": "invalid credentials" }));
 			return;
 		}
 		const hash = results[0].Password; const admin = results[0].IsAdmin; const empid = results[0].EmployeeID;
 		bcrypt.compare(password, hash, function (err, success) {
-			if (err) throw err;
+			if (err) throw err;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 			if (success && admin == 1) {
 				//read a single employee with RestauantID = req.params.id (the :id in the url above), return status code 200 if successful, 404 if not
 				qr_str = "";
 				qr_str = qr_str.concat("DELETE FROM ", table, " WHERE ", p_key, " = ?")
 				global.connection.query(qr_str, [req.params.id], function (error, results, fields) {
-					if (error) throw error;
+					if (error) throw error;// res.send(JSON.stringify({ "status": 400, "error": "bad request"}));
 					res.send(JSON.stringify({ "status": 200, "error": null, "response": results }));
 				});
 			} else {
