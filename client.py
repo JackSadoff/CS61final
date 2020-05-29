@@ -273,7 +273,7 @@ def use(username, password, admin_status):
 					os.system('clear')
 					if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "Patient"
 						or x == "ShiftType" or x == "Task" or x == "TaskCode" or x == "Room" or x == "TaskLog" or x == "PatientLog"):
-						d = input("Please Enter a date in the form YYYY-MM-DD or today")
+						d = input("Please Enter a date in the form YYYY-MM-DD or today\n>")
 						if d == "today":
 							d = date.today()
 						else:
@@ -284,7 +284,7 @@ def use(username, password, admin_status):
 								raise ValueError("Bad date format")
 								continue
 
-						d2 = input("now enter either a second, later date either of the form YYYY-MM-DD, or a relative date of the form !(Integer),([D]ay,[W]eek,[M]onth,[Y]ear)")
+						d2 = input("now enter either a second, later date either of the form YYYY-MM-DD, or a relative date of the form !(Integer),([D]ay,[W]eek,[M]onth,[Y]ear)\n>")
 						if d2[0]=="!":
 							val=int(d2.split(",")[0][1:])
 							mon=0
@@ -311,7 +311,7 @@ def use(username, password, admin_status):
 								raise ValueError("Bad date format")
 								continue
 
-						qry_str=input("Enter an additional query string if you wish of the form '?argument=value&argument2=value2', otherwise just hit enter")
+						qry_str=input("Enter an additional query string if you wish of the form '?argument=value&argument2=value2', otherwise just hit enter\n>")
 						json_resp = make_get_call(
 							'http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password)+"/date/"+str(d)+"/"+str(d2)+qry_str)
 						# print(json_resp)
@@ -329,7 +329,7 @@ def use(username, password, admin_status):
 					y = input()
 					os.system('clear')
 
-			if (x == "ViewInfo"):
+			elif (x == "ViewInfo"):
 				while(x != "back" and x != "quit"):
 					os.system('clear')
 					print("You are currently in the ViewInfo panel!")
@@ -561,7 +561,7 @@ def use(username, password, admin_status):
 		while (x != "quit"):
 			print("You are currently in the Main User panel!")
 			print("--------------------------------------------------")
-			print("Options: ViewUpcomingShifts, ViewCurrentTasks, ViewInfo, CompleteTask, UpdatePatient")
+			print("Options: ViewUpcomingShifts, ViewCurrentTasks,ViewWindow, ViewInfo, CompleteTask, UpdatePatient")
 			print("--------------------------------------------------")
 			x = input()
 			os.system('clear')
@@ -579,7 +579,76 @@ def use(username, password, admin_status):
 				y = input()
 				os.system('clear')
 
-			if (x == "ViewCurrentTasks"):
+			elif (x == "ViewWindow"):
+				while(x != "back" and x != "quit"):
+					os.system('clear')
+					print("You are currently in the ViewWindow panel!")
+					print("----------------------------------------")
+					print("For more Info please select: Employee, EmployeeShift, EmployeeType, ShiftType, Task, TaskCode, Patient, Room")
+					print("Log Options: TaskLog, PatientLog")
+					print("To go back, simply enter 'back'")
+					print("----------------------------------------")
+					x = input()
+					os.system('clear')
+					if (x == "Employee" or x == "EmployeeShift" or x == "EmployeeType" or x == "Patient"
+						or x == "ShiftType" or x == "Task" or x == "TaskCode" or x == "Room" or x == "TaskLog" or x == "PatientLog"):
+						d = input("Please Enter a date in the form YYYY-MM-DD or today\n>")
+						if d == "today":
+							d = date.today()
+						else:
+							try:
+								datetime.datetime.strptime(d,'%Y-%m-%d')
+								d=date.fromisoformat(d)
+							except ValueError:
+								raise ValueError("Bad date format")
+								continue
+
+						d2 = input("now enter either a second, later date either of the form YYYY-MM-DD, or a relative date of the form !(Integer),([D]ay,[W]eek,[M]onth,[Y]ear)\n>")
+						if d2[0]=="!":
+							val=int(d2.split(",")[0][1:])
+							mon=0
+							dy=0
+							yr=0
+							wk=0
+							if d2[-1] == "Y":
+								yr=val
+							elif d2[-1] == "M":
+								mon=val
+							elif d2[-1] == "D":
+								dy=val
+							elif d2[-1]== "W":
+								wk=val
+							else:
+								print("Bad Value")
+								continue
+							d2=d+relativedelta(days=dy,months=mon,years=yr,weeks=wk)
+						else:
+							try:
+								datetime.datetime.strptime(d2,'%Y-%m-%d')
+								d2=date.fromisoformat(d2)
+							except ValueError:
+								raise ValueError("Bad date format")
+								continue
+
+						qry_str=input("Enter an additional query string if you wish of the form '?argument=value&argument2=value2', otherwise just hit enter\n>")
+						json_resp = make_get_call(
+							'http://localhost:3000/api/' + str(x) + '/' + str(username) + '/' + str(password)+"/date/"+str(d)+"/"+str(d2)+qry_str)
+						# print(json_resp)
+						read_json_custom(json_resp)
+					elif (x == 'back'):
+						os.system('clear')
+						break
+					elif (x != "back" or x != "quit"):
+						print("That wasn't one of the choices! Try again.")
+
+					print()
+					print("--------------------")
+					print("Hit Enter When Done!")
+					print("--------------------")
+					y = input()
+					os.system('clear')
+
+			elif (x == "ViewCurrentTasks"):
 				#while(x != "back" and x != "quit"):
 				os.system('clear')
 		#		print("You are currently in the ViewInfo panel!")
